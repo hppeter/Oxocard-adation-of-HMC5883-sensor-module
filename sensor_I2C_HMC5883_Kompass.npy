@@ -1,0 +1,62 @@
+# HMC5883 Compass Module, Adress 0x1e
+#
+# by HP Dietrich
+# Adaption for Oxocard and NanoPython
+# Output the raw x,y,z values
+
+i:byte
+AddrHMC:byte = 0x1e
+data:byte[6]
+heading:float
+h:float
+x:int
+y:int
+z:int
+
+# Scan I2C Bus
+#i = 0
+#while i < 127
+#  if checkI2CAddress(i)
+#    print "Adresse" 
+#    print i 
+#  i++
+    
+# writeI2CByte(AddrHMC, 0, 0x3C) #00111100 0 01=2samples p output 111=reserved Rate 00=Normal messure
+writeI2CByte(AddrHMC, 0, 0x70) #01110000 0 11=8samples p output 100=15Hz Rate 00=Normal messure
+# writeI2CByte(AddrHMC, 1, 0x02) #00000010 select gain and resolution
+writeI2CByte(AddrHMC, 1, 0x20) #00100000 001=1090Gain, 0,92Resolution (Try 010 or 011)
+writeI2CByte(AddrHMC, 2, 0x00) #continuos measurement mode
+
+delay 200
+
+def onDraw()
+  clear()
+  readI2C(AddrHMC,0x03, 6)
+  buf:long[6]
+  for i in 6: buf[i] = getI2CByte()
+  x = (buf[0] << 8) + (buf[1])
+  z = (buf[2] << 8) + (buf[3])
+  y = (buf[4] << 8) + (buf[5])
+
+  # Replacement for ATan2(y,x)
+  if x > 0; h = y / x
+  if x < 0; h = y / x + 3.14
+  heading = atan(h)
+  
+  heading = toInt(heading * 57.3)
+  
+  if(heading < 0) heading +=360;
+ 
+  textFont(FONT_ROBOTO_32)
+  drawText(10,10,x)
+  drawText(10,60,y)
+  drawText(10,110,z)
+  textFont(FONT_ROBOTO_BOLD_48)
+  drawText(10,160,heading)
+  if getButton():
+        if returnToMenu():
+            return
+  delay(500)
+  update()
+  
+  
